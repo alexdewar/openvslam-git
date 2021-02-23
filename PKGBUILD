@@ -1,8 +1,8 @@
 # Maintainer of this PKGBUILD file: Martino Pilia <martino.pilia@gmail.com>
 _name=openvslam
 pkgname=${_name}-git
-pkgver=r428.e069085
-pkgrel=2
+pkgver=r475.c7db4f6
+pkgrel=1
 pkgdesc="A Versatile Visual SLAM Framework"
 arch=('x86_64')
 url="https://github.com/xdspacelab/openvslam"
@@ -25,16 +25,21 @@ makedepends=(
 	'git'
 )
 provides=('openvslam')
-source=("${pkgname}-${pkgver}::git+https://github.com/xdspacelab/openvslam.git")
-sha256sums=('SKIP')
+source=("git+$url"
+        "missing-include.patch::$url/commit/75699f2d842ee13eb3306653383599c25da89f7c.patch")
+sha256sums=('SKIP'
+            '32550aef06733b7f61e7bd658ba6ac1c4c6363a22f6797f7b942f29a62d3015e')
 
 pkgver() {
-	cd "${srcdir}/${pkgname}-${pkgver}"
+	cd "${srcdir}/openvslam"
 	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 prepare() {
-	cd "${srcdir}/${pkgname}-${pkgver}"
+	cd "${srcdir}/openvslam"
+
+	git am ../missing-include.patch
+
 	[ ! -d build ] || rm -rf build
 	mkdir build && cd build
 	cmake .. \
@@ -46,15 +51,17 @@ prepare() {
 }
 
 build() {
-	cd "${srcdir}/${pkgname}-${pkgver}/build"
+	cd "${srcdir}/openvslam/build"
 	make
 }
 
 package() {
-	cd "${srcdir}/${pkgname}-${pkgver}/build"
-	make DESTDIR="$pkgdir/" install
+	cd "${srcdir}/openvslam"
+	make -C build DESTDIR="$pkgdir/" install
 
-	cd "${srcdir}/${pkgname}-${pkgver}"
+	mkdir "$pkgdir/usr/bin/"
+	cp build/run* "$pkgdir/usr/bin/"
+
 	install -D -m644 \
 		"LICENSE" \
 		"${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
